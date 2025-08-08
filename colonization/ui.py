@@ -59,7 +59,7 @@ class MainUi:
             'view_open': tk.PhotoImage(file=path.join(self.iconDir, "view_open.gif")),
             'view_close': tk.PhotoImage(file=path.join(self.iconDir, "view_close.gif"))
         }
-        self.rows: Optional[list] = None
+        self.rows: Optional[list] = None # type: ignore
         self.subscribers: dict[str, Callable[[tk.Event | None], None]] = {}
         self.title: Optional[tk.Label] = None
         self.station: Optional[tk.Label] = None
@@ -92,6 +92,8 @@ class MainUi:
         return self.frame
 
     def reset_frame(self):
+        if not self.frame:
+            return
         for child in list(self.frame.children.values()):
             child.destroy()
         frame = tk.Frame(self.frame)
@@ -128,29 +130,54 @@ class MainUi:
         self.track_btn = tk.Button(self.frame, text=ptl("Track this construction"), command=partial(self.event, "track", None))
         self.track_btn.grid(row=self.next_row(), column=0, sticky=tk.EW, columnspan=5)
 
-        self.table_frame = tk.Frame(self.frame, highlightthickness=1)
+        self.table_frame = tk.Frame(self.frame, highlightthickness=1, highlightcolor="blue", 
+                                   relief="ridge", borderwidth=1, cursor="text")
         self.table_frame.columnconfigure(0, weight=1)
         self.table_frame.grid(row=self.next_row(), column=0, sticky=tk.EW)
+        
+        # Make the frame focusable and enable text selection
+        self.table_frame.focus_set()
+        self.table_frame.bind("<Control-a>", self._select_all_table_text)
+        self.table_frame.bind("<Control-c>", self._copy_table_text)
+        self.table_frame.bind("<Button-3>", self._show_context_menu)  # Right-click menu
 
-        tk.Label(self.table_frame, text=ptl("Commodity")).grid(row=0, column=0, sticky=tk.W)
-        tk.Label(self.table_frame, text=ptl("Buy")).grid(row=0, column=1, sticky=tk.E)
-        tk.Label(self.table_frame, text=ptl("Demand")).grid(row=0, column=2, sticky=tk.E)
-        tk.Label(self.table_frame, text=ptl("Carrier")).grid(row=0, column=3, sticky=tk.E)
-        tk.Label(self.table_frame, text=ptl("Cargo")).grid(row=0, column=4, sticky=tk.E)
+        # Create header labels with selection support
+        header_labels = [
+            tk.Label(self.table_frame, text=ptl("Commodity"), cursor="text"),
+            tk.Label(self.table_frame, text=ptl("Buy"), cursor="text"),
+            tk.Label(self.table_frame, text=ptl("Demand"), cursor="text"),
+            tk.Label(self.table_frame, text=ptl("Carrier"), cursor="text"),
+            tk.Label(self.table_frame, text=ptl("Cargo"), cursor="text")
+        ]
+        
+        # Grid and bind header labels
+        for i, label in enumerate(header_labels):
+            if i == 0:
+                label.grid(row=0, column=i, sticky=tk.W)
+            else:
+                label.grid(row=0, column=i, sticky=tk.E)
+            label.bind("<Button-1>", self._on_label_click)
+            label.bind("<Control-c>", self._copy_table_text)
+            label.bind("<Button-3>", self._show_context_menu)  # Right-click menu
 
         fontDefault = ("Tahoma", 9, "normal")
         fontMono = ("Tahoma", 9, "normal")
 
-        self.rows = []
+        self.rows: list[dict[str, tk.Label]] = []
         for i in range(self.ROWS):
             self.table_frame.grid_rowconfigure(i+1, pad=0)
             labels = {
-                'name': tk.Label(self.table_frame, anchor=tk.W, font=fontDefault, justify=tk.LEFT),
-                'buy': tk.Label(self.table_frame, anchor=tk.E, font=fontMono),
-                'demand': tk.Label(self.table_frame, anchor=tk.E, font=fontMono),
-                'cargo': tk.Label(self.table_frame, anchor=tk.E, font=fontMono),
-                'carrier': tk.Label(self.table_frame, anchor=tk.E, font=fontMono)
+                'name': tk.Label(self.table_frame, anchor=tk.W, font=fontDefault, justify=tk.LEFT, cursor="text"),
+                'buy': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="text"),
+                'demand': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="text"),
+                'cargo': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="text"),
+                'carrier': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="text")
             }
+            # Make labels selectable and focusable
+            for label in labels.values():
+                label.bind("<Button-1>", self._on_label_click)
+                label.bind("<Control-c>", self._copy_table_text)
+                label.bind("<Button-3>", self._show_context_menu)  # Right-click menu
             labels['name'].grid_configure(sticky=tk.W)
             for label in labels.values():
                 label.grid_remove()
@@ -213,6 +240,74 @@ class MainUi:
         if self.top_rows <= 1:
             self.top_rows = 0
         self.event('update', None)
+
+    def _select_all_table_text(self, event):
+        """Enable selecting all table text with Ctrl+A"""
+        # This method prepares for copying - actual copy will happen with Ctrl+C
+        return "break"
+    
+    def _on_label_click(self, event):
+        """Handle label click for selection"""
+        # Focus the table frame to enable keyboard shortcuts
+        if self.table_frame:
+            self.table_frame.focus_set()
+        return "break"
+    
+    def _show_context_menu(self, event):
+        """Show right-click context menu for copying"""
+        if not self.table_frame:
+            return "break"
+            
+        # Create context menu
+        context_menu = tk.Menu(self.table_frame, tearoff=0)
+        context_menu.add_command(label="Copy Table", command=lambda: self._copy_table_text(None))
+        context_menu.add_separator()
+        context_menu.add_command(label="Select All", command=lambda: self._select_all_table_text(None))
+        
+        try:
+            context_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            context_menu.grab_release()
+        
+        return "break"
+    
+    def _copy_table_text(self, event):
+        """Copy visible table content to clipboard"""
+        if not self.rows or not self.table_frame:
+            return "break"
+            
+        # Collect visible table data
+        table_lines = []
+        
+        # Add header
+        header = f"{'Commodity':<30} {'Buy':>10} {'Demand':>10} {'Carrier':>10} {'Cargo':>10}"
+        table_lines.append(header)
+        table_lines.append("-" * len(header))
+        
+        # Add visible rows
+        for row_labels in self.rows:
+            # Check if this row is visible (has text and is gridded)
+            if (row_labels['name'].winfo_viewable() and 
+                hasattr(row_labels['name'], 'cget') and 
+                row_labels['name'].cget('text')):
+                
+                name = row_labels['name'].cget('text')
+                buy = row_labels['buy'].cget('text') if row_labels['buy'].winfo_viewable() else ""
+                demand = row_labels['demand'].cget('text') if row_labels['demand'].winfo_viewable() else ""
+                carrier = row_labels['carrier'].cget('text') if row_labels['carrier'].winfo_viewable() else ""
+                cargo = row_labels['cargo'].cget('text') if row_labels['cargo'].winfo_viewable() else ""
+                
+                line = f"{name:<30} {buy:>10} {demand:>10} {carrier:>10} {cargo:>10}"
+                table_lines.append(line)
+        
+        # Copy to clipboard
+        table_text = "\n".join(table_lines)
+        if table_text.strip():
+            self.table_frame.clipboard_clear()
+            self.table_frame.clipboard_append(table_text)
+            self.table_frame.update()  # Ensure clipboard is updated
+        
+        return "break"
 
     def _show_category(self, row: int, cc: CommodityCategory):
         if row >= self.ROWS:
@@ -288,7 +383,8 @@ class MainUi:
             return
 
         if self.view_mode == ViewMode.NONE:
-            self.table_frame.grid_remove()
+            if self.table_frame:
+                self.table_frame.grid_remove()
             return
 
         # sort
@@ -349,9 +445,11 @@ class MainUi:
                 r.grid_remove()
 
         if row == 0:
-            self.table_frame.grid_remove()
+            if self.table_frame:
+                self.table_frame.grid_remove()
         else:
-            self.table_frame.grid()
+            if self.table_frame:
+                self.table_frame.grid()
 
 
     def set_station(self, value: str | None, color: str | None = None) -> None:
