@@ -131,7 +131,7 @@ class MainUi:
         self.track_btn.grid(row=self.next_row(), column=0, sticky=tk.EW, columnspan=5)
 
         self.table_frame = tk.Frame(self.frame, highlightthickness=1, highlightcolor="blue", 
-                                   relief="ridge", borderwidth=1, cursor="text")
+                                   relief="ridge", borderwidth=1, cursor="gobbler")
         self.table_frame.columnconfigure(0, weight=1)
         self.table_frame.grid(row=self.next_row(), column=0, sticky=tk.EW)
         
