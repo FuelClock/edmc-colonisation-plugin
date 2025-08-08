@@ -255,7 +255,6 @@ class MainUi:
         # Create context menu
         context_menu = tk.Menu(self.table_frame, tearoff=0)
         context_menu.add_command(label="Copy Table", command=lambda: self._copy_table_text(None))
-        context_menu.add_separator()
         
         try:
             context_menu.tk_popup(event.x_root, event.y_root)
