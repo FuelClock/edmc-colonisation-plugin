@@ -131,7 +131,7 @@ class MainUi:
         self.track_btn.grid(row=self.next_row(), column=0, sticky=tk.EW, columnspan=5)
 
         self.table_frame = tk.Frame(self.frame, highlightthickness=1, highlightcolor="blue", 
-                                   relief="ridge", borderwidth=1, cursor="gobbler")
+                                   relief="ridge", borderwidth=1)
         self.table_frame.columnconfigure(0, weight=1)
         self.table_frame.grid(row=self.next_row(), column=0, sticky=tk.EW)
         
@@ -142,11 +142,11 @@ class MainUi:
 
         # Create header labels with selection support
         header_labels = [
-            tk.Label(self.table_frame, text=ptl("Commodity"), cursor="gobbler"),
-            tk.Label(self.table_frame, text=ptl("Buy"), cursor="gobbler"),
-            tk.Label(self.table_frame, text=ptl("Demand"), cursor="gobbler"),
-            tk.Label(self.table_frame, text=ptl("Carrier"), cursor="gobbler"),
-            tk.Label(self.table_frame, text=ptl("Cargo"), cursor="gobbler")
+            tk.Label(self.table_frame, text=ptl("Commodity")),
+            tk.Label(self.table_frame, text=ptl("Buy")),
+            tk.Label(self.table_frame, text=ptl("Demand")),
+            tk.Label(self.table_frame, text=ptl("Carrier")),
+            tk.Label(self.table_frame, text=ptl("Cargo"))
         ]
         
         # Grid and bind header labels
@@ -166,11 +166,11 @@ class MainUi:
         for i in range(self.ROWS):
             self.table_frame.grid_rowconfigure(i+1, pad=0)
             labels = {
-                'name': tk.Label(self.table_frame, anchor=tk.W, font=fontDefault, justify=tk.LEFT, cursor="gobbler"),
-                'buy': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="gobbler"),
-                'demand': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="gobbler"),
-                'cargo': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="gobbler"),
-                'carrier': tk.Label(self.table_frame, anchor=tk.E, font=fontMono, cursor="gobbler")
+                'name': tk.Label(self.table_frame, anchor=tk.W, font=fontDefault, justify=tk.LEFT),
+                'buy': tk.Label(self.table_frame, anchor=tk.E, font=fontMono),
+                'demand': tk.Label(self.table_frame, anchor=tk.E, font=fontMono),
+                'cargo': tk.Label(self.table_frame, anchor=tk.E, font=fontMono),
+                'carrier': tk.Label(self.table_frame, anchor=tk.E, font=fontMono)
             }
             # Make labels selectable and focusable
             for label in labels.values():
