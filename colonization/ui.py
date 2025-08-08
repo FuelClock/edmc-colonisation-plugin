@@ -137,7 +137,6 @@ class MainUi:
         
         # Make the frame focusable and enable text selection
         self.table_frame.focus_set()
-        self.table_frame.bind("<Control-a>", self._select_all_table_text)
         self.table_frame.bind("<Control-c>", self._copy_table_text)
         self.table_frame.bind("<Button-3>", self._show_context_menu)  # Right-click menu
 
@@ -240,11 +239,6 @@ class MainUi:
         if self.top_rows <= 1:
             self.top_rows = 0
         self.event('update', None)
-
-    def _select_all_table_text(self, event):
-        """Enable selecting all table text with Ctrl+A"""
-        # This method prepares for copying - actual copy will happen with Ctrl+C
-        return "break"
     
     def _on_label_click(self, event):
         """Handle label click for selection"""
@@ -262,7 +256,6 @@ class MainUi:
         context_menu = tk.Menu(self.table_frame, tearoff=0)
         context_menu.add_command(label="Copy Table", command=lambda: self._copy_table_text(None))
         context_menu.add_separator()
-        context_menu.add_command(label="Select All", command=lambda: self._select_all_table_text(None))
         
         try:
             context_menu.tk_popup(event.x_root, event.y_root)
@@ -272,17 +265,16 @@ class MainUi:
         return "break"
     
     def _copy_table_text(self, event):
-        """Copy visible table content to clipboard"""
+        """Copy visible table content to clipboard in Excel-compatible tab-separated format"""
         if not self.rows or not self.table_frame:
             return "break"
             
         # Collect visible table data
         table_lines = []
         
-        # Add header
-        header = f"{'Commodity':<30} {'Buy':>10} {'Demand':>10} {'Carrier':>10} {'Cargo':>10}"
+        # Add header with tab separation for Excel compatibility
+        header = "Commodity\tBuy\tDemand\tCarrier\tCargo"
         table_lines.append(header)
-        table_lines.append("-" * len(header))
         
         # Add visible rows
         for row_labels in self.rows:
@@ -297,7 +289,14 @@ class MainUi:
                 carrier = row_labels['carrier'].cget('text') if row_labels['carrier'].winfo_viewable() else ""
                 cargo = row_labels['cargo'].cget('text') if row_labels['cargo'].winfo_viewable() else ""
                 
-                line = f"{name:<30} {buy:>10} {demand:>10} {carrier:>10} {cargo:>10}"
+                # Remove commas from numbers for Excel compatibility
+                buy_clean = buy.replace(',', '') if buy else ""
+                demand_clean = demand.replace(',', '') if demand else ""
+                carrier_clean = carrier.replace(',', '') if carrier else ""
+                cargo_clean = cargo.replace(',', '') if cargo else ""
+                
+                # Use tab separation for Excel compatibility
+                line = f"{name}\t{buy_clean}\t{demand_clean}\t{carrier_clean}\t{cargo_clean}"
                 table_lines.append(line)
         
         # Copy to clipboard
