@@ -113,13 +113,15 @@ class ColonizationPlugin:
 
         if entry['event'] == "Cargo":
             self.cargo = state['Cargo'].copy()
-            self.maxcargo = max(int(entry.get("Count", 0)), self.maxcargo)
+            if "CargoCapacity" in entry:
+                self.maxcargo = int(entry["CargoCapacity"])
             self.update_display()
             self.save()
 
         if entry['event'] == 'StartUp':
             self.cargo = state['Cargo'].copy()
-            self.maxcargo = max(int(entry.get("Count", 0)), self.maxcargo)
+            if "CargoCapacity" in entry:
+                self.maxcargo = int(entry["CargoCapacity"])
             self.set_docked(state)
 
         if entry['event'] == 'Docked':
