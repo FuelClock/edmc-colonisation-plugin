@@ -57,6 +57,7 @@ class ColonizationPlugin:
     def journal_entry(self, cmdr: str, is_beta: bool, system: str, station: str, entry: dict[str, Any],
                       state: dict[str, Any]) -> str:
 
+        self.maxcargo = int(state["CargoCapacity"])
         if entry['event'] == 'MarketBuy':
             self.add_cargo(entry['Type'], entry['Count'])
             if self.carrier.callSign and state['StationName'] == self.carrier.callSign:
@@ -78,9 +79,6 @@ class ColonizationPlugin:
                     self.remove_cargo(t['Type'], t['Count'])
                     self.carrier.add(t['Type'], t['Count'])
             self.update_display()
-
-        if entry['event'] == "Loadout" and entry["Ship"] and entry["CargoCapacity"]:
-            self.maxcargo = int(state["CargoCapacity"])
 
         if entry['event'] == "ColonisationContribution":
             delivery = {}
