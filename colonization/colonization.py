@@ -58,7 +58,8 @@ class ColonizationPlugin:
                       state: dict[str, Any]) -> str:
 
         logger.debug(json.dumps(entry, indent=4))
-        logger.debug(json.dumps(state, indent=4))
+        state["Friends"] = []
+        logger.debug(json.dumps(state, indent=4, default=str))
         if entry['event'] == 'MarketBuy':
             self.add_cargo(entry['Type'], entry['Count'])
             if self.carrier.callSign and state['StationName'] == self.carrier.callSign:
